@@ -6,7 +6,7 @@ import RoomPool from "./pool/RoomPool";
 import Logger from "./util/Logger";
 const c = new Logger("Song Open Character");
 c.log(`Initializing Song Open Character snapshot 23w28a`);
-c.log(`Idea from https://www.bilibili.com/video/BV17k4y1P7Sq`);
+c.log(`Idea from https://www.bilibili.com/video/BV15s4y1c7Lw`);
 
 
 HttpServer.getInstance().start()
