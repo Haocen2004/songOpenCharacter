@@ -62,11 +62,20 @@ export default class Room {
         return true;
     }
 
-    public removePlayer(player: Player): boolean {
-        if (!this.players.includes(player)) return false;
+    public removePlayer(player: Player): number {
+        if (!this.players.includes(player)) return 0;
+        if (this.players[this.currPos].equal(player)) {
+            if (this.currPos == this.players.length) {
+                this.currPos = 0;
+            }
+
+            this.players.splice(this.players.indexOf(player), 1);
+            this.scores.delete(player);
+            return -1;
+        }
         this.players.splice(this.players.indexOf(player), 1);
         this.scores.delete(player);
-        return true;
+        return 1;
     }
 
     public hasPlayer(player: Player): boolean {
@@ -115,15 +124,16 @@ export default class Room {
                 }
             });
             if (score < 0) {
+                let addScore = 0
                 score = score / -1
                 if (this.characters.includes(mask)) {
-                    score = score * 1
+                    addScore = 1
                 } else if (this.numbers.includes(parseInt(mask))) {
-                    score = score * 3
+                    addScore = 3
                 } else {
-                    score = score * 10
+                    addScore = 10
                 }
-                this.scores.set(player, this.scores.get(player) as number + score - (failCount * 10))
+                this.scores.set(player, this.scores.get(player) as number + addScore - (failCount * 10))
             }
         }
         return true;
@@ -168,7 +178,11 @@ export default class Room {
         this.tempGuessId = guessId;
         this.tempGuess = guess;
         this.tempGuessPlayer = player;
-
+        let song = this.songsList[guessId];
+        if (song.name.toLocaleLowerCase() == guess.toLocaleLowerCase()) {
+            return this.checkGuess(true);
+        }
+        return '';
     }
 
     public getTempGuess(): [number, string, Player] {
@@ -259,6 +273,22 @@ export default class Room {
         return roomDBInfo;
     }
 
+    public endGame(): string {
+        this.isStart = false;
+        let retMsg = '游戏结束：\n当前分数：\n'
+        this.scores.forEach((value, key) => {
+            retMsg += key.name + ":" + value + "\n"
+        });
+        retMsg += '歌曲列表：\n'
+        for (const index in this.songsList) {
+            retMsg += `${Number(index) + 1}、 ${this.songsList[index].name} —— ${this.songsList[index].artist}\n`;
+        }
+        return retMsg;
+    }
+
+    public reduceScore(player: Player, score: number): void {
+        this.scores.set(player, this.scores.get(player) as number - score);
+    }
 
 
 

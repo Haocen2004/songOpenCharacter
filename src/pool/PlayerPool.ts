@@ -10,7 +10,9 @@ export default class PlayerPool {
         let player = this.players.get(id);
         if (player == undefined) {
             player = new Player(name, id);
-            this.players.set(id, player);
+            if (name != 'null;placeholder') {
+                this.players.set(id, player);
+            }
         }
         return player;
     }

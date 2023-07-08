@@ -61,8 +61,8 @@ export default class HttpServer {
                 });
             } else {
                 c.log(body)
+                req.json({})
             }
-            req.json({})
         })
 
     }

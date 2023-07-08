@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { resolve } from 'path';
 import { VerboseLevel } from './Logger';
-import TextUtil from './TextUtil';
 
 const DEFAULT_CONFIG = {
     // General
