@@ -1,3 +1,4 @@
+import RoomDB, { CachePlayerInfo, CacheSongInfo, RoomDBInfo } from "../db/RoomDB";
 import Player from "./Player";
 import Song from "./Song";
 
@@ -12,6 +13,8 @@ export default class Room {
     private tempGuessId: number = -1;
     private tempGuess: string = '';
     private tempGuessPlayer: Player = new Player('', -1)
+    private guessedSongCount: number = 0;
+    private isStart: boolean = false;
 
     constructor(public sessionCode: string, public host: Player, public maxPlayers: number) {
         this.host = host;
@@ -19,11 +22,17 @@ export default class Room {
         this.maxPlayers = maxPlayers;
     }
 
+    public isStarted(isStart: boolean | undefined = undefined): boolean {
+        if (isStart != undefined) this.isStart = isStart;
+        return this.isStart;
+    }
 
-    public addSong(song: Song): boolean {
+
+    public addSong(song: Song, isGuessed = false): boolean {
         if (this.songs.has(song)) return false;
         this.songsList.push(song);
-        this.songs.set(song, false);
+        this.songs.set(song, isGuessed);
+        if (isGuessed) this.guessedSongCount++;
         return true;
     }
 
@@ -43,11 +52,11 @@ export default class Room {
         return this.songsList;
     }
 
-    public addPlayer(player: Player): boolean {
+    public addPlayer(player: Player, score = 0): boolean {
         if (this.players.includes(player)) return false;
         if (this.players.length >= this.maxPlayers) return false;
         this.players.push(player);
-        this.scores.set(player, 0);
+        this.scores.set(player, score);
         return true;
     }
 
@@ -59,8 +68,17 @@ export default class Room {
     }
 
     public hasPlayer(player: Player): boolean {
-        return this.players.includes(player);
+        let result = false;
+        this.players.forEach((p) => {
+            if (p.equal(player)) result = true;
+        });
+        return result;
     }
+
+    public setPos(pos: number) {
+        this.currPos = pos;
+    }
+
 
     public getScores(): Map<Player, number> {
         return this.scores;
@@ -80,6 +98,7 @@ export default class Room {
     public reset(): void {
         this.clearSongs();
         this.clearMasks();
+        this.isStart = false;
     }
 
     public resetScores(): void {
@@ -117,6 +136,7 @@ export default class Room {
 
     public checkGuess(result: boolean) {
         if (result) {
+            this.guessedSongCount++;
             this.songs.set(this.songsList[this.tempGuessId], true);
             this.scores.set(this.tempGuessPlayer, this.scores.get(this.tempGuessPlayer) as number + 1);
         }
@@ -127,24 +147,68 @@ export default class Room {
     }
 
     public nextTurn() {
-        let message = '';
         this.currPos++;
         if (this.currPos >= this.players.length) {
             this.currPos = 0;
         }
+        if (this.guessedSongCount >= this.songsList.length) {
+            return '游戏结束';
+        }
+        return this.currTurn();
+
+    }
+
+    public currTurn(): string {
+
+        RoomDB.saveRoom(this.getDBData());
+        let message = '';
         let currPlayer = this.players[this.currPos];
         message = `下一位玩家：${currPlayer.name}(${currPlayer.id})\n`;
         message += `当前翻开字符：${this.masks}\n`;
         for (const index in this.songsList) {
             let guessed = this.songs.get(this.songsList[index]);
             if (guessed) {
-                message += `${index}、 ${this.songsList[index].name} —— ${this.songsList[index].artist}\n`;
+                message += `${Number(index) + 1}、 ${this.songsList[index].name} —— ${this.songsList[index].artist}\n`;
             } else {
-                message += `${index}、 ${this.songsList[index].getMaskedName(this.masks)}\n`;
+                message += `${Number(index) + 1}、 ${this.songsList[index].getMaskedName(this.masks)}\n`;
             }
         }
         return message;
     }
+
+    public getDBData(): RoomDBInfo {
+        let songs: CacheSongInfo[] = [];
+        this.songsList.forEach((song, index) => {
+            songs.push({
+                name: song.name,
+                artist: song.artist,
+                isGuessed: this.songs.get(song) as boolean,
+                position: index
+            } as CacheSongInfo);
+        });
+        let players: CachePlayerInfo[] = [];
+        this.players.forEach((player, index) => {
+            players.push({
+                name: player.name,
+                id: player.id,
+                score: this.scores.get(player) as number,
+                position: index
+            } as CachePlayerInfo);
+        });
+
+        let roomDBInfo: RoomDBInfo = {
+            sessionCode: this.sessionCode,
+            host: this.host,
+            maxPlayers: this.maxPlayers,
+            currPos: this.currPos,
+            masks: this.masks,
+            songs: songs,
+            players: players
+        }
+        return roomDBInfo;
+    }
+
+
 
 
 }
