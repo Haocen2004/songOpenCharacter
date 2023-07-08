@@ -36,6 +36,8 @@ export default class HttpServer {
                 }
                 return
             } else if (body.type == "NewFriendRequestEvent") {
+                c.log(body)
+                c.log('accpet friend' + body.fromId)
                 req.json({
                     command: "resp_newFriendRequestEvent", content: {
                         eventId: body.eventId,
@@ -44,7 +46,19 @@ export default class HttpServer {
                         operate: 0,
                         message: ""
                     }
-                })
+                });
+            } else if (body.type == "BotInvitedJoinGroupRequestEvent") {
+                c.log(body)
+                c.log('join group' + body.groupId)
+                req.json({
+                    command: "resp_botInvitedJoinGroupRequestEvent", content: {
+                        eventId: body.eventId,
+                        fromId: body.fromId,
+                        groupId: body.groupId,
+                        operate: 0,
+                        message: ""
+                    }
+                });
             } else {
                 c.log(body)
             }

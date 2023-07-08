@@ -15,6 +15,8 @@ export default class Room {
     private tempGuessPlayer: Player = new Player('', -1)
     private guessedSongCount: number = 0;
     private isStart: boolean = false;
+    private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    private characters = 'abcdefghijklmnopqrstuvwxyz'.split('')
 
     constructor(public sessionCode: string, public host: Player, public maxPlayers: number) {
         this.host = host;
@@ -75,6 +77,10 @@ export default class Room {
         return result;
     }
 
+    public isActivePlayer(player: Player): boolean {
+        return this.players[this.currPos].equal(player);
+    }
+
     public setPos(pos: number) {
         this.currPos = pos;
     }
@@ -84,10 +90,42 @@ export default class Room {
         return this.scores;
     }
 
-    public addMask(mask: string): boolean {
+    public addMask(mask: string, player: Player | undefined = undefined): boolean {
         mask = mask.toLocaleLowerCase();
         if (this.masks.includes(mask)) return false;
+        let score = 0;
+        if (player != undefined) {
+            this.songs.forEach((isGuessed, song) => {
+                if (!isGuessed) {
+                    score += song.getMaskedScore(this.masks)
+                }
+            });
+        }
         this.masks.push(mask);
+        if (player != undefined) {
+            let failCount = 0
+            this.songs.forEach((isGuessed, song) => {
+                if (!isGuessed) {
+                    score = score - song.getMaskedScore(this.masks)
+                    if (song.isFullGuess(this.masks)) {
+                        failCount++
+                        this.guessedSongCount++;
+                        this.songs.set(song, true);
+                    }
+                }
+            });
+            if (score < 0) {
+                score = score / -1
+                if (this.characters.includes(mask)) {
+                    score = score * 1
+                } else if (this.numbers.includes(parseInt(mask))) {
+                    score = score * 3
+                } else {
+                    score = score * 10
+                }
+                this.scores.set(player, this.scores.get(player) as number + score - (failCount * 10))
+            }
+        }
         return true;
     }
 
@@ -99,12 +137,15 @@ export default class Room {
         this.clearSongs();
         this.clearMasks();
         this.isStart = false;
+        this.guessedSongCount = 0;
+        RoomDB.saveRoom(this.getDBData());
     }
 
     public resetScores(): void {
         this.scores.forEach((_value, key) => {
             this.scores.set(key, 0);
         });
+        RoomDB.saveRoom(this.getDBData());
     }
 
     public getMaskedSongs(): string[] {
@@ -138,7 +179,8 @@ export default class Room {
         if (result) {
             this.guessedSongCount++;
             this.songs.set(this.songsList[this.tempGuessId], true);
-            this.scores.set(this.tempGuessPlayer, this.scores.get(this.tempGuessPlayer) as number + 1);
+            let bounceScore = this.songsList[this.tempGuessId].getMaskedScore(this.masks);
+            this.scores.set(this.tempGuessPlayer, this.scores.get(this.tempGuessPlayer) as number + 5 + bounceScore);
         }
         this.tempGuessId = -1;
         this.tempGuess = '';
@@ -152,7 +194,16 @@ export default class Room {
             this.currPos = 0;
         }
         if (this.guessedSongCount >= this.songsList.length) {
-            return '游戏结束';
+
+            let retMsg = '游戏结束：\n当前分数：\n'
+            this.scores.forEach((value, key) => {
+                retMsg += key.name + ":" + value + "\n"
+            });
+            retMsg += '歌曲列表：\n'
+            for (const index in this.songsList) {
+                retMsg += `${Number(index) + 1}、 ${this.songsList[index].name} —— ${this.songsList[index].artist}\n`;
+            }
+            return retMsg;
         }
         return this.currTurn();
 

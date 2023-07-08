@@ -10,6 +10,7 @@ const c = new Logger("MessageProcessor", "cyan");
 export default class MessageProcessor {
 
     public static processPrivate(message: string, sender: any) {
+        let player = PlayerPool.getInstance().getPlayer(sender.id, sender.memberName)
         if (message.startsWith('/help')) {
             return this.sendFriendMessage(sender, `/sgc 开字母小游戏\n/sgc add [歌名] [曲师] (如有空格请用引号包裹e.g /sgc add "N3V3R G3T OV3R" C-Show)\n/g [字符] 猜测一个字符\n/s [id] [猜测歌名] 猜测完整歌名`)
         }
@@ -18,7 +19,7 @@ export default class MessageProcessor {
             if (command.length < 2) {
                 return this.sendFriendMessage(sender, "参数不足")
             }
-            var room = RoomPool.getInstance().getRoomByHost(sender)
+            var room = RoomPool.getInstance().getRoomByHost(player)
             if (room == undefined) return this.sendFriendMessage(sender, "你没有创建房间")
             switch (command[1]) {
                 case 'add':
@@ -130,6 +131,10 @@ export default class MessageProcessor {
                         retMsg += key.name + ":" + value + "\n"
                     });
                     return this.sendGroupMessage(sender, retMsg)
+                case 'info':
+                    var room = RoomPool.getInstance().getRoom(sender.group.id);
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+                    return this.sendGroupMessage(sender, room.currTurn())
                 case 'start':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
                     if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
@@ -158,11 +163,20 @@ export default class MessageProcessor {
         if (message.startsWith('/g')) {
             var room = RoomPool.getInstance().getRoom(sender.group.id)
             if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+            if (!room.hasPlayer(player)) return this.sendGroupMessage(sender, "你未参与当前游戏！")
+            if (!room.isActivePlayer(player)) return
             if (message.length != 4) return this.sendGroupMessage(sender, "你只能猜测一个字符")
-            room.addMask(message[3])
-            return this.sendGroupMessage(sender, room.nextTurn())
+            if (room.addMask(message[3],player)) {
+                return this.sendGroupMessage(sender, room.nextTurn())
+            } else {
+                return this.sendGroupMessage(sender, "这个字符已经开过了！")
+            }
         }
         if (message.startsWith('/s')) {
+            var room = RoomPool.getInstance().getRoom(sender.group.id)
+            if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+            if (!room.hasPlayer(player)) return this.sendGroupMessage(sender, "你未参与当前游戏！")
+            if (!room.isActivePlayer(player)) return
             var command = message.split(' ')
             if (command.length <= 2) {
                 return this.sendGroupMessage(sender, "参数不足 /s [id] [猜测歌名]")
@@ -174,9 +188,6 @@ export default class MessageProcessor {
                     songName += " " + command[i]
                 }
             }
-            var room = RoomPool.getInstance().getRoom(sender.group.id)
-            if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-            if (!room.hasPlayer(player)) return this.sendGroupMessage(sender, "你未参与当前游戏！")
             room.guessSong(id - 1, songName, player)
             return this.sendGroupMessage(sender, "当前猜测[" + id + "][" + songName + "]\n请等待主持人判定（/sgc y\\n）")
         }
