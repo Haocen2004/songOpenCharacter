@@ -36,7 +36,7 @@ export default class RoomDB {
         const db = Database.getInstance();
         const RoomDB = await db.get("rooms", { sessionCode: sessionCode }) as unknown as RoomDBInfo;
         if (!RoomDB) return undefined;
-        let room = new Room(RoomDB.sessionCode, PlayerPool.getInstance().getPlayer(RoomDB.host.id,RoomDB.host.name), RoomDB.maxPlayers);
+        let room = new Room(RoomDB.sessionCode, PlayerPool.getInstance().getPlayer(RoomDB.host.id, RoomDB.host.name), RoomDB.maxPlayers);
         RoomDB.masks.forEach(mask => room.addMask(mask));
         let sortSongs = new Map<number, CacheSongInfo>();
         RoomDB.songs.forEach(song => sortSongs.set(song.position, song));

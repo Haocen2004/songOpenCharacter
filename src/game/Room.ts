@@ -64,13 +64,14 @@ export default class Room {
 
     public removePlayer(player: Player): number {
         if (!this.players.includes(player)) return 0;
-        if (this.players[this.currPos].equal(player)) {
+        if (this.currPos != -1 && this.players[this.currPos].equal(player)) {
             if (this.currPos == this.players.length) {
                 this.currPos = 0;
             }
 
             this.players.splice(this.players.indexOf(player), 1);
             this.scores.delete(player);
+            if (this.players.length == 0) return -2;
             return -1;
         }
         this.players.splice(this.players.indexOf(player), 1);
@@ -221,6 +222,31 @@ export default class Room {
         }
         return this.currTurn();
 
+    }
+
+    public sortSongs(rule: string | undefined) {
+        if (rule == 'random' || rule == 'r' || rule == undefined) {
+            this.songsList.sort(() => {
+                return Math.random() - 0.5;
+            });
+            return;
+        }
+        if (rule == 'up') {
+            this.songsList.sort((a, b) => {
+                return a.name.length - b.name.length
+            });
+            return;
+        }
+        if (rule == 'down') {
+            this.songsList.sort((a, b) => {
+                return b.name.length - a.name.length
+            });
+            return;
+        }
+    }
+
+    public getPlayers(): Player[] {
+        return this.players;
     }
 
     public currTurn(): string {
