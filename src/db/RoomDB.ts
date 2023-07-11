@@ -27,6 +27,7 @@ export interface CacheSongInfo {
     name: string,
     artist: string,
     isGuessed: boolean,
+    guessedRound: number,
     position: number
 }
 
@@ -42,7 +43,7 @@ export default class RoomDB {
         RoomDB.songs.forEach(song => sortSongs.set(song.position, song));
         for (let index = 0; index < sortSongs.size; index++) {
             let song = sortSongs.get(index) as CacheSongInfo;
-            room.addSong(new Song(song.name, song.artist), song.isGuessed);
+            room.addSong(new Song(song.name, song.artist), song.isGuessed, song.guessedRound);
         }
         let sortPlayers = new Map<number, CachePlayerInfo>();
         RoomDB.players.forEach(player => sortPlayers.set(player.position, player));

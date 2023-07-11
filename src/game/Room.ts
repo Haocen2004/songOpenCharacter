@@ -17,6 +17,8 @@ export default class Room {
     private isStart: boolean = false;
     private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     private characters = 'abcdefghijklmnopqrstuvwxyz'.split('')
+    private rounds = 0;
+    private songsRound: Map<Song, number> = new Map<Song, number>()
 
     constructor(public sessionCode: string, public host: Player, public maxPlayers: number) {
         this.host = host;
@@ -30,10 +32,11 @@ export default class Room {
     }
 
 
-    public addSong(song: Song, isGuessed = false): boolean {
+    public addSong(song: Song, isGuessed: boolean = false, guessedRound: number = 0): boolean {
         if (this.songs.has(song)) return false;
         this.songsList.push(song);
         this.songs.set(song, isGuessed);
+        this.songsRound.set(song, guessedRound)
         if (isGuessed) this.guessedSongCount++;
         return true;
     }
@@ -118,6 +121,8 @@ export default class Room {
                 if (!isGuessed) {
                     score = score - song.getMaskedScore(this.masks)
                     if (song.isFullGuess(this.masks)) {
+                        this.songsRound.set(song, this.rounds)
+                        song.setPrefix('[开]')
                         failCount++
                         this.guessedSongCount++;
                         this.songs.set(song, true);
@@ -194,6 +199,8 @@ export default class Room {
         if (result) {
             this.guessedSongCount++;
             this.songs.set(this.songsList[this.tempGuessId], true);
+            this.songsRound.set(this.songsList[this.tempGuessId], this.rounds)
+            this.songsList[this.tempGuessId].setPrefix('[猜]')
             let bounceScore = this.songsList[this.tempGuessId].getMaskedScore(this.masks);
             this.scores.set(this.tempGuessPlayer, this.scores.get(this.tempGuessPlayer) as number + 5 + bounceScore);
         }
@@ -205,6 +212,7 @@ export default class Room {
 
     public nextTurn() {
         this.currPos++;
+        this.rounds++;
         if (this.currPos >= this.players.length) {
             this.currPos = 0;
         }
@@ -249,7 +257,7 @@ export default class Room {
         return this.players;
     }
 
-    public currTurn(): string {
+    public currTurn(showFullSongs = false): string {
 
         RoomDB.saveRoom(this.getDBData());
         let message = '';
@@ -257,9 +265,13 @@ export default class Room {
         message = `下一位玩家：${currPlayer.name}(${currPlayer.id})\n`;
         message += `当前翻开字符：${this.masks}\n`;
         for (const index in this.songsList) {
-            let guessed = this.songs.get(this.songsList[index]);
+            let song = this.songsList[index]
+            let guessed = this.songs.get(song);
             if (guessed) {
-                message += `${Number(index) + 1}、 ${this.songsList[index].name} —— ${this.songsList[index].artist}\n`;
+                let guessedRound = this.songsRound.get(song) as number
+                if (!(!isNaN(guessedRound) && guessedRound != 0 && this.rounds - guessedRound > 2 && !showFullSongs)) {
+                    message += `${Number(index) + 1}、 ${this.songsList[index].name} —— ${this.songsList[index].artist}\n`;
+                }
             } else {
                 message += `${Number(index) + 1}、 ${this.songsList[index].getMaskedName(this.masks)}\n`;
             }
@@ -274,6 +286,7 @@ export default class Room {
                 name: song.name,
                 artist: song.artist,
                 isGuessed: this.songs.get(song) as boolean,
+                guessedRound: this.songsRound.get(song) as number,
                 position: index
             } as CacheSongInfo);
         });

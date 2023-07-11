@@ -26,12 +26,16 @@ export default class Song {
 
     public getMaskedScore(masks: string[]): number {
         let score = 0;
-        this.lowerCaseName.split("").forEach((char, _index) => {
+        this.lowerCaseName.replace(' ', '').split("").forEach((char, _index) => {
             if (masks.includes(char.toLocaleLowerCase())) {
                 score++
             }
         });
         return score;
+    }
+
+    public setPrefix(prefix: string) {
+        this.name = prefix + this.name
     }
 
     public isFullGuess(masks: string[]): boolean {

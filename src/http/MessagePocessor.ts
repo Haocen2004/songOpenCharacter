@@ -26,6 +26,7 @@ export default class MessageProcessor {
             if (room == undefined) return this.sendFriendMessage(sender, "你没有创建房间")
             switch (command[1]) {
                 case 'add':
+                    if (room.getSongs().length >= 10) return this.sendFriendMessage(sender, "歌曲数量已达到上限")
                     let songName = command[2]
                     let i = 2
                     if (songName.startsWith('"')) {
@@ -42,8 +43,10 @@ export default class MessageProcessor {
                             songName = songName.substring(0, songName.length - 1)
                         }
                     }
-                    console.log(songName)
                     console.log(command)
+                    if (songName.length < 1) return this.sendFriendMessage(sender, "参数错误")
+                    console.log(songName)
+                    // if (i+1 < command.length) return this.sendFriendMessage(sender, "参数错误")
                     let songAuthor = command[i + 1]
                     console.log(songAuthor)
                     if (songAuthor.startsWith('"')) {
@@ -149,7 +152,14 @@ export default class MessageProcessor {
                 case 'leave':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
                     if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id == player.id) return this.sendGroupMessage(sender, "你是主持人")
+                    if (room.host.id == player.id) {
+                        if (room.isStarted()) {
+                            return this.sendGroupMessage(sender, "游戏已经开始,请使用/sgc end结束游戏后退出")
+                        }
+                        RoomPool.getInstance().removeRoom(room)
+                        RoomDB.removeRoom(room.sessionCode)
+                        return this.sendGroupMessage(sender, "主持人已退出，游戏自动重置")
+                    }
                     switch (room.removePlayer(player)) {
                         case 0:
                             return this.sendGroupMessage(sender, "你没有加入")
@@ -179,7 +189,7 @@ export default class MessageProcessor {
                     var room = RoomPool.getInstance().getRoom(sender.group.id);
                     if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
                     if (room.isStarted() == false) return this.sendGroupMessage(sender, "游戏还没开始")
-                    return this.sendGroupMessage(sender, room.currTurn())
+                    return this.sendGroupMessage(sender, room.currTurn(true))
                 case 'start':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
                     if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
@@ -197,7 +207,10 @@ export default class MessageProcessor {
                     if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
                     if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
                     if (room.isStarted() == false) return this.sendGroupMessage(sender, "游戏还没开始")
-                    return this.sendGroupMessage(sender, room.endGame())
+                    if (command[2] && command[2] == 'confirm') {
+                        return this.sendGroupMessage(sender, room.endGame())
+                    }
+                    return this.sendGroupMessage(sender, '确认要结束游戏吗 如果是请输入/sgc end confirm')
                 case 'reset':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
                     if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
@@ -244,6 +257,7 @@ export default class MessageProcessor {
             }
             try {
                 let id = Number(command[1])
+                if (isNaN(id)) return this.sendFriendMessage(sender, "序号错误")
                 if (room.getSongs().length < (id -1)) return this.sendGroupMessage(sender,"序号错误")
                 let songName = command[2]
                 if (command.length > 3) {   //歌名有空格
