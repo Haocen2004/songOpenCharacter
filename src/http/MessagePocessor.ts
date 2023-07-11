@@ -10,7 +10,7 @@ export default class MessageProcessor {
 
     public static processPrivate(message: string, sender: any) {
         let player = PlayerPool.getInstance().getPlayer(sender.id, sender.memberName)
-        let helpmsg = `/sgc 开字母小游戏帮助菜单\n/sgc add [歌名] [曲师] (如有空格请用引号包裹e.g /sgc add "N3V3R G3T OV3R" C-Show)\n/sgc del [序号] 删除一首歌曲\n/sgc sort [random|up|down] 排序乐曲，不带参数为随机\n以下为群聊使用：\n/sgc start [c?] 开始游戏(可选初始是否带一个开过的字符)\n/sgc end 结束游戏\n/sgc next 跳过这位玩家\n/sgc reset 重置歌曲和进度，保留分数\n/sgc hardreset 完全重置，需要重新/sgc create 来开始新游戏`
+        let helpmsg = `开字母小游戏帮助菜单\n/sgc add <歌名> [曲师] (如有空格请用引号包裹 e.g /sgc add "歌 名" "曲 师")\n/sgc del <序号> 删除一首歌曲\n/sgc sort [random|up|down] 排序乐曲，不带参数为随机\n以下为群聊使用：\n/sgc start [c?] 开始游戏(可选初始是否带一个开过的字符)\n/sgc end [confirm] 结束游戏\n/sgc next 跳过这位玩家\n/sgc reset 重置歌曲和进度，保留分数\n/sgc hardreset 完全重置，需要重新/sgc create 来开始新游戏`
         if (message.startsWith('/help')) {
             return this.sendFriendMessage(sender, helpmsg)
         }
@@ -20,10 +20,10 @@ export default class MessageProcessor {
             }
             var command = message.split(' ')
             if (command.length < 2) {
-                return this.sendFriendMessage(sender, "参数不足,请使用/sgc help查看帮助")
+                return this.sendFriendMessage(sender, "参数不足,请使用 /sgc help 查看帮助")
             }
             var room = RoomPool.getInstance().getRoomByHost(player)
-            if (room == undefined) return this.sendFriendMessage(sender, "你没有创建房间")
+            if (room == undefined) return this.sendFriendMessage(sender, "你没有创建任何房间")
             switch (command[1]) {
                 case 'add':
                     if (room.getSongs().length >= 10) return this.sendFriendMessage(sender, "歌曲数量已达到上限")
@@ -44,7 +44,7 @@ export default class MessageProcessor {
                         }
                     }
                     console.log(command)
-                    if (songName.length < 1) return this.sendFriendMessage(sender, "参数错误")
+                    if (songName.length < 1) return this.sendFriendMessage(sender, "乐曲名不能为空")
                     console.log(songName)
                     // if (i+1 < command.length) return this.sendFriendMessage(sender, "参数错误")
                     let songAuthor = command[i + 1]
@@ -71,7 +71,7 @@ export default class MessageProcessor {
                         index++;
                         songs += `${index}、 ${song.name} —— ${song.artist}\n`;
                     })
-                    return this.sendFriendMessage(sender, "添加成功,当前歌曲:\n" + songs)
+                    return this.sendFriendMessage(sender, "添加成功,当前歌曲列表:\n" + songs)
                 case 'd':
                 case 'del':
                 case 'delete':
@@ -89,7 +89,7 @@ export default class MessageProcessor {
                         index++;
                         songs += `${index}、 ${song.name} —— ${song.artist}\n`;
                     })
-                    return this.sendFriendMessage(sender, "删除成功,当前歌曲:\n" + songs)
+                    return this.sendFriendMessage(sender, "删除成功,当前歌曲列表:\n" + songs)
                 case 'sort':
                     room.sortSongs(command[2])
                     RoomDB.saveRoom(room.getDBData())
@@ -99,7 +99,7 @@ export default class MessageProcessor {
                         index++;
                         songs += `${index}、 ${song.name} —— ${song.artist}\n`;
                     })
-                    return this.sendFriendMessage(sender, "排序完成,当前歌曲:\n" + songs)
+                    return this.sendFriendMessage(sender, "排序完成,当前歌曲列表:\n" + songs)
                 default:
                     return this.sendFriendMessage(sender, "未知命令")
             }
@@ -115,25 +115,25 @@ export default class MessageProcessor {
             }
             switch (command[1]) {
                 case 'help':
-                    return this.sendGroupMessage(sender, "/sgc 开字母小游戏帮助菜单\n/sgc create 发起一个开字母小游戏并成为主持人\n/sgc join 加入当前群聊的开字母小游戏\n/sgc scores 查看当前游戏分数\n/sgc info 查看当前回合信息\n\n/g [字符] 猜测一个字符\n/s [id] [猜测歌名] 猜测完整歌名")
+                    return this.sendGroupMessage(sender, "开字母小游戏帮助菜单\n/sgc create 发起一个开字母小游戏并成为主持人\n/sgc join 加入当前群聊的开字母小游戏\n/sgc scores 查看当前游戏分数\n/sgc info 查看当前回合信息\n\n/g [字符] 猜测一个字符\n/s [id] [猜测歌名] 猜测完整歌名")
                 case 'y':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
                     return this.sendGroupMessage(sender, room.checkGuess(true))
                 case 'n':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
                     return this.sendGroupMessage(sender, room.checkGuess(false))
                 case 'next':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
                     return this.sendGroupMessage(sender, room.nextTurn())
                 case 'create':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room != undefined) return this.sendGroupMessage(sender, "当前群聊已经有一个游戏了")
+                    if (room != undefined) return this.sendGroupMessage(sender, `${room.host.name}(${room.host.id})已经发起了一场游戏！`)
                     if (command[2]) {
                         RoomPool.getInstance().createRoom(sender.group.id, player, Number(command[2]))
                     }
@@ -141,20 +141,20 @@ export default class MessageProcessor {
                     return this.sendGroupMessage(sender, "创建成功,请私聊bot添加乐曲(请先添加bot账号好友)")
                 case 'join':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id == player.id) return this.sendGroupMessage(sender, "你是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id == player.id) return this.sendGroupMessage(sender, "你是主持人，无法加入玩家队列")
                     if (room.addPlayer(player)) {
                         RoomDB.saveRoom(room.getDBData())
-                        return this.sendGroupMessage(sender, "加入成功")
+                        return this.sendGroupMessage(sender, `加入成功，当前共 ${room.getPlayers().length} 名玩家`)
                     } else {
-                        return this.sendGroupMessage(sender, "你已经加入了")
+                        return this.sendGroupMessage(sender, "你已经在当前游戏中了！")
                     }
                 case 'leave':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
                     if (room.host.id == player.id) {
                         if (room.isStarted()) {
-                            return this.sendGroupMessage(sender, "游戏已经开始,请使用/sgc end结束游戏后退出")
+                            return this.sendGroupMessage(sender, "游戏已经开始，主持人无法退出，请在游戏结束后再试")
                         }
                         RoomPool.getInstance().removeRoom(room)
                         RoomDB.removeRoom(room.sessionCode)
@@ -162,7 +162,7 @@ export default class MessageProcessor {
                     }
                     switch (room.removePlayer(player)) {
                         case 0:
-                            return this.sendGroupMessage(sender, "你没有加入")
+                            return this.sendGroupMessage(sender, "你不在玩家队列中")
                         case 1:
                             RoomDB.saveRoom(room.getDBData())
                             return this.sendGroupMessage(sender, "离开成功")
@@ -178,7 +178,7 @@ export default class MessageProcessor {
                 case 'score':
                 case 'scores':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
                     let scores = room.getScores()
                     let retMsg = '当前分数：\n'
                     scores.forEach((value, key) => {
@@ -187,25 +187,25 @@ export default class MessageProcessor {
                     return this.sendGroupMessage(sender, retMsg)
                 case 'info':
                     var room = RoomPool.getInstance().getRoom(sender.group.id);
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
                     if (room.isStarted() == false) return this.sendGroupMessage(sender, "游戏还没开始")
                     return this.sendGroupMessage(sender, room.currTurn(true))
                 case 'start':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
-                    if (room.getSongs().length == 0) return this.sendGroupMessage(sender, "当前没有歌曲")
-                    if (room.getPlayers().length == 0) return this.sendGroupMessage(sender, "当前没有玩家")
-                    if (room.isStarted()) return this.sendGroupMessage(sender, "游戏已经开始了")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
+                    if (room.getSongs().length == 0) return this.sendGroupMessage(sender, "当前没有添加歌曲")
+                    if (room.getPlayers().length == 0) return this.sendGroupMessage(sender, "当前没有玩家加入")
+                    if (room.isStarted()) return this.sendGroupMessage(sender, "游戏已经开始了，请不要重复操作")
                     room.isStarted(true)
                     if (command[2] && command[2].length == 1) {
                         room.addMask(command[2])
                     }
                     return this.sendGroupMessage(sender, room.nextTurn())
-                case 'end confirm':
+                case 'end':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
                     if (room.isStarted() == false) return this.sendGroupMessage(sender, "游戏还没开始")
                     if (command[2] && command[2] == 'confirm') {
                         return this.sendGroupMessage(sender, room.endGame())
@@ -213,14 +213,14 @@ export default class MessageProcessor {
                     return this.sendGroupMessage(sender, '确认要结束游戏吗 如果是请输入/sgc end confirm')
                 case 'reset':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
                     room.reset()
                     return this.sendGroupMessage(sender, "重置成功,请私聊bot添加乐曲(玩家无需重新加入，分数保留)")
                 case 'hardreset':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
-                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
-                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人")
+                    if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
+                    if (room.host.id != player.id) return this.sendGroupMessage(sender, "你不是主持人，不能执行此操作")
                     RoomPool.getInstance().removeRoom(room)
                     RoomDB.removeRoom(room.sessionCode)
                     return this.sendGroupMessage(sender, "重置成功,若要重新开始请使用/sgc create创建一局新游戏")
@@ -230,7 +230,7 @@ export default class MessageProcessor {
         }
         if (message.startsWith('/g')) {
             var room = RoomPool.getInstance().getRoom(sender.group.id)
-            if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+            if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
             if (!room.hasPlayer(player)) return this.sendGroupMessage(sender, "你未参与当前游戏！")
             if (!room.isActivePlayer(player)) {
                 room.reduceScore(player, 2);
@@ -245,7 +245,7 @@ export default class MessageProcessor {
         }
         if (message.startsWith('/s')) {
             var room = RoomPool.getInstance().getRoom(sender.group.id)
-            if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有游戏")
+            if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
             if (!room.hasPlayer(player)) return this.sendGroupMessage(sender, "你未参与当前游戏！")
             if (!room.isActivePlayer(player)) {
                 room.reduceScore(player, 2);
