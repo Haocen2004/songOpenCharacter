@@ -14,6 +14,9 @@ export default class PlayerPool {
                 this.players.set(id, player);
             }
         }
+        if (player.name == null && name != null && name != 'null;placeholder') {
+            player.name = name;
+        }
         return player;
     }
 

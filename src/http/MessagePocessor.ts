@@ -258,7 +258,7 @@ export default class MessageProcessor {
             try {
                 let id = Number(command[1])
                 if (isNaN(id)) return this.sendFriendMessage(sender, "序号错误")
-                if (room.getSongs().length < (id -1)) return this.sendGroupMessage(sender,"序号错误")
+                if (room.getSongs().length < (id - 1)) return this.sendGroupMessage(sender, "序号错误")
                 let songName = command[2]
                 if (command.length > 3) {   //歌名有空格
                     for (let i = 3; i < command.length; i++) {
@@ -266,14 +266,14 @@ export default class MessageProcessor {
                     }
                 }
                 let msg = room.guessSong(id - 1, songName, player)
-    
+
                 if (msg == '') {
                     return this.sendGroupMessage(sender, "当前猜测[" + id + "][" + songName + "]\n请等待主持人判定（/sgc y\\n）")
                 } else {
                     return this.sendGroupMessage(sender, msg)
                 }
             } catch (e) {
-                return this.sendGroupMessage(sender,"序号错误")
+                return this.sendGroupMessage(sender, "序号错误")
             }
 
         }
