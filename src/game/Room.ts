@@ -196,6 +196,7 @@ export default class Room {
     }
 
     public checkGuess(result: boolean) {
+        if (this.tempGuessId == -1) return "当前没有需要判定的猜测！"
         if (result) {
             this.guessedSongCount++;
             this.songs.set(this.songsList[this.tempGuessId], true);
@@ -327,6 +328,10 @@ export default class Room {
 
     public reduceScore(player: Player, score: number): void {
         this.scores.set(player, this.scores.get(player) as number - score);
+    }
+
+    public isSongGuessed(song: Song): boolean {
+        return this.songs.get(song) as boolean
     }
 
 

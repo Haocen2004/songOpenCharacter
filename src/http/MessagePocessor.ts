@@ -8,6 +8,8 @@ const c = new Logger("MessageProcessor", "cyan");
 
 export default class MessageProcessor {
 
+    private static lastTime: number;
+
     public static processPrivate(message: string, sender: any) {
         let player = PlayerPool.getInstance().getPlayer(sender.id, sender.memberName)
         let helpmsg = `开字母小游戏帮助菜单\n/sgc add <歌名> [曲师] (如有空格请用引号包裹 e.g /sgc add "歌 名" "曲 师")\n/sgc del <序号> 删除一首歌曲\n/sgc sort [random|up|down] 排序乐曲，不带参数为随机\n以下为群聊使用：\n/sgc start [c?] 开始游戏(可选初始是否带一个开过的字符)\n/sgc end [confirm] 结束游戏\n/sgc next 跳过这位玩家\n/sgc reset 重置歌曲和进度，保留分数\n/sgc hardreset 完全重置，需要重新/sgc create 来开始新游戏`
@@ -24,9 +26,12 @@ export default class MessageProcessor {
             }
             var room = RoomPool.getInstance().getRoomByHost(player)
             if (room == undefined) return this.sendFriendMessage(sender, "你没有创建任何房间")
+            if (Date.now() - this.lastTime < 100) return
+            if (Date.now() - this.lastTime < 1000) return this.sendFriendMessage(sender, "操作过于频繁，请稍后再试")
+            this.lastTime = Date.now()
             switch (command[1]) {
                 case 'add':
-                    if (room.getSongs().length >= 10) return this.sendFriendMessage(sender, "歌曲数量已达到上限")
+                    if (room.getSongs().length >= 15) return this.sendFriendMessage(sender, "歌曲数量已达到上限")
                     let songName = command[2]
                     let i = 2
                     if (songName.startsWith('"')) {
@@ -47,22 +52,37 @@ export default class MessageProcessor {
                     if (songName.length < 1) return this.sendFriendMessage(sender, "乐曲名不能为空")
                     console.log(songName)
                     // if (i+1 < command.length) return this.sendFriendMessage(sender, "参数错误")
-                    let songAuthor = command[i + 1]
-                    console.log(songAuthor)
-                    if (songAuthor.startsWith('"')) {
-                        songAuthor = songAuthor.substring(1)
-                        if (!songAuthor.endsWith('"')) {
-                            for (i = i + 2; i < command.length; i++) {
-                                songAuthor += " " + command[i]
-                                if (command[i].endsWith('"')) {
-                                    songAuthor = songAuthor.substring(0, songAuthor.length - 1)
-                                    break
+                    let songAuthor = ''
+                    try {
+                        let songAuthor = command[i + 1]
+                        console.log(songAuthor)
+                        if (songAuthor.startsWith('"')) {
+                            songAuthor = songAuthor.substring(1)
+                            if (!songAuthor.endsWith('"')) {
+                                for (i = i + 2; i < command.length; i++) {
+                                    songAuthor += " " + command[i]
+                                    if (command[i].endsWith('"')) {
+                                        songAuthor = songAuthor.substring(0, songAuthor.length - 1)
+                                        break
+                                    }
                                 }
+                            } else {
+                                songAuthor = songAuthor.substring(0, songAuthor.length - 1)
                             }
-                        } else {
-                            songAuthor = songAuthor.substring(0, songAuthor.length - 1)
                         }
+                        room.addSong(new Song(songName, songAuthor))
+                        var index = 0;
+                        var songs = '';
+                        RoomDB.saveRoom(room.getDBData())
+                        room.getSongs().forEach((song) => {
+                            index++;
+                            songs += `${index}、 ${song.name} —— ${song.artist}\n`;
+                        })
+                        return this.sendFriendMessage(sender, "添加成功,当前歌曲列表:\n" + songs)
+                    } catch (err) {
+                        console.log(err)
                     }
+
                     room.addSong(new Song(songName, songAuthor))
                     var index = 0;
                     var songs = '';
@@ -243,7 +263,7 @@ export default class MessageProcessor {
                 return this.sendGroupMessage(sender, "这个字符已经开过了！")
             }
         }
-        if (message.startsWith('/s')) {
+        if (message.startsWith('/s ')) {
             var room = RoomPool.getInstance().getRoom(sender.group.id)
             if (room == undefined) return this.sendGroupMessage(sender, "当前群聊没有发起开字母小游戏")
             if (!room.hasPlayer(player)) return this.sendGroupMessage(sender, "你未参与当前游戏！")
@@ -259,6 +279,7 @@ export default class MessageProcessor {
                 let id = Number(command[1])
                 if (isNaN(id)) return this.sendFriendMessage(sender, "序号错误")
                 if (room.getSongs().length < (id - 1)) return this.sendGroupMessage(sender, "序号错误")
+                if (room.isSongGuessed(room.getSongs()[(id - 1)])) return this.sendGroupMessage(sender, "这首歌已经被猜过了")
                 let songName = command[2]
                 if (command.length > 3) {   //歌名有空格
                     for (let i = 3; i < command.length; i++) {
