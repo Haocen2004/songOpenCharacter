@@ -24,6 +24,7 @@ export default class Room {
         this.host = host;
         this.sessionCode = sessionCode;
         this.maxPlayers = maxPlayers;
+        RoomDB.saveRoom(this.getDBData())
     }
 
     public isStarted(isStart: boolean | undefined = undefined): boolean {
@@ -72,7 +73,7 @@ export default class Room {
                 this.currPos = 0;
             }
 
-            this.players.splice(this.players.indexOf(player), 1);
+            this.players = this.players.splice(this.players.indexOf(player), 1);
             this.scores.delete(player);
             if (this.players.length == 0) return -2;
             return -1;
