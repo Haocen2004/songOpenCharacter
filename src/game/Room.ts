@@ -78,7 +78,7 @@ export default class Room {
             if (this.players.length == 0) return -2;
             return -1;
         }
-        this.players.splice(this.players.indexOf(player), 1);
+        this.players = this.players.splice(this.players.indexOf(player), 1);
         this.scores.delete(player);
         return 1;
     }
