@@ -13,7 +13,8 @@ export interface RoomDBInfo {
     players: CachePlayerInfo[],
     currPos: number,
     masks: string[],
-    maxPlayers: number
+    maxPlayers: number,
+    rounds: number
 }
 
 export interface CachePlayerInfo {
@@ -52,6 +53,8 @@ export default class RoomDB {
             room.addPlayer(PlayerPool.getInstance().getPlayer(player.id, player.name), player.score);
         }
         room.setPos(RoomDB.currPos);
+        room.setRound(RoomDB.rounds);
+        this.saveRoom(room.getDBData());
 
         return room
     }

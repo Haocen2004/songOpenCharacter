@@ -24,7 +24,7 @@ export default class Room {
         this.host = host;
         this.sessionCode = sessionCode;
         this.maxPlayers = maxPlayers;
-        RoomDB.saveRoom(this.getDBData())
+        // RoomDB.saveRoom(this.getDBData())
     }
 
     public isStarted(isStart: boolean | undefined = undefined): boolean {
@@ -68,17 +68,17 @@ export default class Room {
 
     public removePlayer(player: Player): number {
         if (!this.players.includes(player)) return 0;
-        if (this.currPos != -1 && this.players[this.currPos].equal(player)) {
-            if (this.currPos == this.players.length) {
+        if (this.currPos != -1 && this.players[this.currPos].id == player.id) {
+            if (this.currPos == (this.players.length -1)) {
                 this.currPos = 0;
             }
 
-            this.players = this.players.splice(this.players.indexOf(player), 1);
+            this.players.splice(this.players.indexOf(player));
             this.scores.delete(player);
             if (this.players.length == 0) return -2;
             return -1;
         }
-        this.players = this.players.splice(this.players.indexOf(player), 1);
+        this.players.splice(this.players.indexOf(player));
         this.scores.delete(player);
         return 1;
     }
@@ -309,9 +309,14 @@ export default class Room {
             currPos: this.currPos,
             masks: this.masks,
             songs: songs,
-            players: players
+            players: players,
+            rounds: this.rounds,
         }
         return roomDBInfo;
+    }
+
+    public setRound(round: number) {
+        this.rounds = round;
     }
 
     public endGame(): string {

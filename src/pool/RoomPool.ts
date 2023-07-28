@@ -8,10 +8,11 @@ export default class RoomPool {
     private static instance: RoomPool;
     public readonly sessions: Map<string, Room> = new Map()
 
-    public createRoom(sessionCode: string, host: Player, maxPlayers = 10): boolean {
-        if (this.sessions.has(sessionCode)) return false;
-        this.sessions.set(sessionCode, new Room(sessionCode, host, maxPlayers));
-        return true;
+    public createRoom(sessionCode: string, host: Player, maxPlayers = 10): Room | undefined {
+        if (this.sessions.has(sessionCode)) return undefined;
+        let newRoom = new Room(sessionCode, host, maxPlayers)
+        this.sessions.set(sessionCode, newRoom);
+        return newRoom;
     }
 
     public removeRoom(room: Room): boolean {

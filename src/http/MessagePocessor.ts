@@ -155,9 +155,12 @@ export default class MessageProcessor {
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
                     if (room != undefined) return this.sendGroupMessage(sender, `${room.host.name}(${room.host.id})已经发起了一场游戏！`)
                     if (command[2]) {
-                        RoomPool.getInstance().createRoom(sender.group.id, player, Number(command[2]))
+                        room = RoomPool.getInstance().createRoom(sender.group.id, player, Number(command[2]))
+                    } else {
+                        room = RoomPool.getInstance().createRoom(sender.group.id, player)
                     }
-                    RoomPool.getInstance().createRoom(sender.group.id, player)
+                    if (room == undefined) return this.sendGroupMessage(sender, "创建失败，请稍后再试")
+                    RoomDB.saveRoom(room.getDBData())
                     return this.sendGroupMessage(sender, "创建成功,请私聊bot添加乐曲(请先添加bot账号好友)")
                 case 'join':
                     var room = RoomPool.getInstance().getRoom(sender.group.id)
